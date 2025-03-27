@@ -3,7 +3,7 @@ name: Build APK with Buildozer
 on:
   push:
     branches:
-      - main  # Change this if your main branch has a different name
+      - main
   pull_request:
     branches:
       - main
@@ -32,13 +32,27 @@ jobs:
         run: |
           pip install --user buildozer
 
+      - name: Install Android SDK & Build Tools (Fix AIDL Error)
+        run: |
+          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip
+          mv cmdline-tools latest
+          export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+          sdkmanager --sdk_root=$ANDROID_HOME --licenses
+          sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
       - name: Initialize Buildozer
         run: |
+          export PATH=$HOME/.local/bin:$PATH
           if [ ! -f buildozer.spec ]; then buildozer init; fi
 
       - name: Build APK
         run: |
           export PATH=$HOME/.local/bin:$PATH
+          export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
           buildozer -v android debug
 
       - name: Upload APK as Artifact
