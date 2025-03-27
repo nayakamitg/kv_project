@@ -32,7 +32,7 @@ jobs:
         run: |
           pip install --user buildozer
 
-      - name: Install Android SDK & Build Tools (Fix AIDL Error)
+      - name: Install Android SDK & Build Tools
         run: |
           mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
           cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
