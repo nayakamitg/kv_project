@@ -1,42 +1,48 @@
-name: CI
+name: Build APK with Buildozer
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main  # Change this if your main branch has a different name
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
-        shell: bash
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
-    - name: Cache Buildozer global directory
-      uses: actions/cache@v2
-      with:
-          path: .buildozer_global
-          key: buildozer-global-${{ hashFiles('buildozer.spec') }} # Replace with your path
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git zip unzip openjdk-17-jdk autoconf build-essential libtool
+          pip install --upgrade pip setuptools wheel
+          pip install cython virtualenv
 
-    - uses: actions/cache@v2
-      with:
-          path: .buildozer
-          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
+      - name: Install Buildozer
+        run: |
+          pip install --user buildozer
 
-    - name: Build with Buildozer
-      uses: ArtemSBulgakov/buildozer-action@v1
-      id: buildozer
-      with:
-          command: buildozer android debug
-          buildozer_version: stable
+      - name: Initialize Buildozer
+        run: |
+          if [ ! -f buildozer.spec ]; then buildozer init; fi
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-          name: package
-          path: ${{ steps.buildozer.outputs.filename }}
+      - name: Build APK
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          buildozer -v android debug
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyApp-APK
+          path: bin/*.apk
